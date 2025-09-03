@@ -224,8 +224,12 @@ export const CanvasRenderer = ({
 
   const handleDragMove = (id: string) => (e: Konva.KonvaEventObject<Event>) => {
     const node = e.target;
+    const foundElement = elements.find(el => el.id === id);
+    if (!foundElement) {
+      return;
+    }
     const updatedElement = { 
-      ...elements.find(el => el.id === id)!, 
+      ...foundElement, 
       x: node.x(), 
       y: node.y() 
     };

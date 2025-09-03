@@ -83,7 +83,6 @@ export const DesignEditor = () => {
       pos = { x: STAGE_PADDING + canvasSize.width / 2, y: STAGE_PADDING + canvasSize.height / 2 };
     }
     
-    console.log('Adding element:', type, 'at position:', pos, 'canvasSize:', canvasSize, 'STAGE_PADDING:', STAGE_PADDING);
     
     let newElement: CanvasElement | null = null;
 

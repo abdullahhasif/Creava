@@ -1,0 +1,137 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Canva-inspired design system with modern aesthetics */
+
+@layer base {
+  :root {
+    /* Core Background Colors */
+    --background: 0 0% 99%;
+    --foreground: 210 15% 15%;
+    
+    /* Editor Specific Colors */
+    --editor-background: 0 0% 95%;
+    --editor-canvas: 0 0% 100%;
+    --editor-panel: 0 0% 98%;
+    --editor-panel-border: 220 15% 90%;
+    
+    /* UI Components */
+    --card: 0 0% 100%;
+    --card-foreground: 210 15% 15%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 15% 15%;
+    
+    /* Brand Colors */
+    --primary: 262 90% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 262 90% 55%;
+    
+    --secondary: 220 15% 96%;
+    --secondary-foreground: 210 15% 15%;
+    --secondary-hover: 220 15% 92%;
+    
+    /* Utility Colors */
+    --muted: 220 15% 96%;
+    --muted-foreground: 220 15% 45%;
+    
+    --accent: 220 15% 94%;
+    --accent-foreground: 210 15% 15%;
+    
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Interactive Elements */
+    --border: 220 15% 88%;
+    --input: 220 15% 96%;
+    --ring: 262 90% 60%;
+    
+    /* Tool Colors */
+    --tool-active: 262 90% 60%;
+    --tool-hover: 220 15% 92%;
+    
+    /* Success and Warning */
+    --success: 120 70% 50%;
+    --warning: 45 90% 55%;
+    
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 210 20% 8%;
+    --foreground: 210 15% 95%;
+    
+    --editor-background: 210 20% 6%;
+    --editor-canvas: 210 20% 10%;
+    --editor-panel: 210 20% 8%;
+    --editor-panel-border: 210 20% 15%;
+    
+    --card: 210 20% 10%;
+    --card-foreground: 210 15% 95%;
+    
+    --popover: 210 20% 10%;
+    --popover-foreground: 210 15% 95%;
+    
+    --primary: 262 90% 65%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 262 90% 70%;
+    
+    --secondary: 210 20% 15%;
+    --secondary-foreground: 210 15% 95%;
+    --secondary-hover: 210 20% 18%;
+    
+    --muted: 210 20% 15%;
+    --muted-foreground: 210 15% 60%;
+    
+    --accent: 210 20% 15%;
+    --accent-foreground: 210 15% 95%;
+    
+    --destructive: 0 85% 65%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 210 20% 18%;
+    --input: 210 20% 15%;
+    --ring: 262 90% 65%;
+    
+    --tool-active: 262 90% 65%;
+    --tool-hover: 210 20% 18%;
+    
+    --success: 120 70% 55%;
+    --warning: 45 90% 60%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}

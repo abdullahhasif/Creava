@@ -7,10 +7,28 @@ import { ToolbarPanel } from './ToolbarPanel';
 import { LayersPanel } from './LayersPanel';
 import { PropertiesPanel } from './PropertiesPanel';
 import { CanvasRenderer } from './CanvasRenderer';
+import { useWindowSize } from '@/hooks/use-window-size';
 import { generateId } from '@/lib/utils';
 import { toast } from 'sonner';
 
+const getCanvasSize = (width: number) => {
+  if (width < 768) { // xs
+    return { width: 300, height: 450 };
+  }
+  if (width < 1024) { // sm
+    return { width: 450, height: 600 };
+  }
+  if (width < 1280) { // md
+    return { width: 600, height: 750 };
+  }
+  if (width < 1536) { // lg
+    return { width: 800, height: 600 };
+  }
+  return { width: 900, height: 650 }; // xl
+};
+
 export const DesignEditor = () => {
+  const { width: windowWidth } = useWindowSize();
   const [isEditingText, setIsEditingText] = useState<string | null>(null);
   const [editorState, setEditorState] = useState<EditorState>({
     elements: [],
@@ -19,10 +37,11 @@ export const DesignEditor = () => {
   });
   
   const stageRef = useRef<any>(null);
-  const canvasSize = { width: 800, height: 600 };
+  const canvasSize = getCanvasSize(windowWidth);
 
   const addElement = (type: CanvasElement['type'], imageUrl?: string, position?: Vector2d) => {
-    const pos = position || { x: 100, y: 100 };
+    const stageCenter = { x: (canvasSize.width + 400) / 2, y: (canvasSize.height + 400) / 2 };
+    const pos = position ? { x: position.x + 200, y: position.y + 200 } : stageCenter;
     let newElement: CanvasElement;
 
     switch (type) {
@@ -160,7 +179,7 @@ export const DesignEditor = () => {
   const selectedElement = editorState.elements.find(el => el.id === editorState.selectedElementId);
 
   return (
-  <div className="h-screen bg-editor-background flex" style={{ overflow: 'visible' }}>
+    <div className="h-screen bg-editor-background flex">
       {/* Left Sidebar - Tools & Layers */}
       <div className="w-80 bg-editor-panel border-r border-editor-panel-border flex flex-col">
         <ToolbarPanel 
@@ -178,15 +197,16 @@ export const DesignEditor = () => {
       </div>
 
       {/* Main Canvas Area */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-8 overflow-hidden">
         <div 
-          className="bg-editor-canvas shadow-xl rounded-lg overflow-hidden"
+          className="relative"
           style={{ width: canvasSize.width, height: canvasSize.height }}
         >
           <Stage
             ref={stageRef}
-            width={canvasSize.width}
-            height={canvasSize.height}
+            width={canvasSize.width + 400}
+            height={canvasSize.height + 400}
+            style={{ position: 'absolute', top: -200, left: -200 }}
             onClick={handleStageClick}
             onTap={handleStageClick}
           >
@@ -199,6 +219,7 @@ export const DesignEditor = () => {
                 onTextDoubleClick={handleTextDoubleClick}
                 isEditingText={isEditingText}
                 onTextEdit={handleTextEdit}
+                canvasSize={canvasSize}
               />
             </Layer>
           </Stage>

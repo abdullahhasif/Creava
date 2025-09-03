@@ -1,5 +1,6 @@
-import { Rect, Circle, Text, Transformer, Image } from 'react-konva';
+import { Rect, Circle, Text, Transformer, Image, Line } from 'react-konva';
 import { useRef, useEffect, useState } from 'react';
+import React from 'react';
 import { CanvasElement } from '@/types/editor';
 import Konva from 'konva';
 import useImage from 'use-image';
@@ -16,8 +17,128 @@ interface CanvasRendererProps {
   stagePadding?: number;
 }
 
+// Smart guides configuration
+const GUIDE_THRESHOLD = 10; // pixels within which to show guides
+const GUIDE_COLOR = '#3B82F6'; // blue color for guides
+const GUIDE_WIDTH = 1;
+
+// Calculate alignment guides for an element being dragged
+const calculateGuides = (
+  draggedElement: CanvasElement,
+  otherElements: CanvasElement[],
+  canvasSize: { width: number; height: number },
+  stagePadding: number
+) => {
+  const guides: Array<{ x1: number; y1: number; x2: number; y2: number; type: string }> = [];
+  
+  // Canvas center guides
+  const canvasCenterX = stagePadding + canvasSize.width / 2;
+  const canvasCenterY = stagePadding + canvasSize.height / 2;
+  
+  // Canvas edge guides
+  const canvasLeft = stagePadding;
+  const canvasRight = stagePadding + canvasSize.width;
+  const canvasTop = stagePadding;
+  const canvasBottom = stagePadding + canvasSize.height;
+  
+  // Check vertical alignment with canvas center
+  if (Math.abs(draggedElement.x + draggedElement.width / 2 - canvasCenterX) < GUIDE_THRESHOLD) {
+    guides.push({
+      x1: canvasCenterX,
+      y1: stagePadding - 50,
+      x2: canvasCenterX,
+      y2: stagePadding + canvasSize.height + 50,
+      type: 'canvas-center-vertical'
+    });
+  }
+  
+  // Check horizontal alignment with canvas center
+  if (Math.abs(draggedElement.y + draggedElement.height / 2 - canvasCenterY) < GUIDE_THRESHOLD) {
+    guides.push({
+      x1: stagePadding - 50,
+      y1: canvasCenterY,
+      x2: stagePadding + canvasSize.width + 50,
+      y2: canvasCenterY,
+      type: 'canvas-center-horizontal'
+    });
+  }
+  
+  // Check alignment with other elements
+  otherElements.forEach(element => {
+    if (element.id === draggedElement.id) return;
+    
+    // Vertical alignment (left edges)
+    if (Math.abs(draggedElement.x - element.x) < GUIDE_THRESHOLD) {
+      guides.push({
+        x1: element.x,
+        y1: Math.min(draggedElement.y, element.y) - 20,
+        x2: element.x,
+        y2: Math.max(draggedElement.y + draggedElement.height, element.y + element.height) + 20,
+        type: 'element-left'
+      });
+    }
+    
+    // Vertical alignment (right edges)
+    if (Math.abs((draggedElement.x + draggedElement.width) - (element.x + element.width)) < GUIDE_THRESHOLD) {
+      guides.push({
+        x1: element.x + element.width,
+        y1: Math.min(draggedElement.y, element.y) - 20,
+        x2: element.x + element.width,
+        y2: Math.max(draggedElement.y + draggedElement.height, element.y + element.height) + 20,
+        type: 'element-right'
+      });
+    }
+    
+    // Vertical alignment (center)
+    if (Math.abs((draggedElement.x + draggedElement.width / 2) - (element.x + element.width / 2)) < GUIDE_THRESHOLD) {
+      guides.push({
+        x1: element.x + element.width / 2,
+        y1: Math.min(draggedElement.y, element.y) - 20,
+        x2: element.x + element.width / 2,
+        y2: Math.max(draggedElement.y + draggedElement.height, element.y + element.height) + 20,
+        type: 'element-center-vertical'
+      });
+    }
+    
+    // Horizontal alignment (top edges)
+    if (Math.abs(draggedElement.y - element.y) < GUIDE_THRESHOLD) {
+      guides.push({
+        x1: Math.min(draggedElement.x, element.x) - 20,
+        y1: element.y,
+        x2: Math.max(draggedElement.x + draggedElement.width, element.x + element.width) + 20,
+        y2: element.y,
+        type: 'element-top'
+      });
+    }
+    
+    // Horizontal alignment (bottom edges)
+    if (Math.abs((draggedElement.y + draggedElement.height) - (element.y + element.height)) < GUIDE_THRESHOLD) {
+      guides.push({
+        x1: Math.min(draggedElement.x, element.x) - 20,
+        y1: element.y + element.height,
+        x2: Math.max(draggedElement.x + draggedElement.width, element.x + element.width) + 20,
+        y2: element.y + element.height,
+        type: 'element-bottom'
+      });
+    }
+    
+    // Horizontal alignment (center)
+    if (Math.abs((draggedElement.y + draggedElement.height / 2) - (element.y + element.height / 2)) < GUIDE_THRESHOLD) {
+      guides.push({
+        x1: Math.min(draggedElement.x, element.x) - 20,
+        y1: element.y + element.height / 2,
+        x2: Math.max(draggedElement.x + draggedElement.width, element.x + element.width) + 20,
+        y2: element.y + element.height / 2,
+        type: 'element-center-horizontal'
+      });
+    }
+  });
+  
+  return guides;
+};
+
 // Image component to handle loading
-const KonvaImage = ({ element, ...props }: { element: CanvasElement } & any) => {
+const KonvaImage = ({ element, ...props }: { element: CanvasElement } & Omit<React.ComponentProps<typeof Image>, 'image'>) => {
   const [image] = useImage(element.src || '');
   
   return (
@@ -43,6 +164,8 @@ export const CanvasRenderer = ({
 }: CanvasRendererProps) => {
   const transformerRef = useRef<Konva.Transformer>(null);
   const [editingText, setEditingText] = useState('');
+  const [draggedElement, setDraggedElement] = useState<CanvasElement | null>(null);
+  const [guides, setGuides] = useState<Array<{ x1: number; y1: number; x2: number; y2: number; type: string }>>([]);
 
   useEffect(() => {
     if (transformerRef.current && selectedElementId) {
@@ -56,7 +179,7 @@ export const CanvasRenderer = ({
     }
   }, [selectedElementId]);
 
-  const handleElementChange = (id: string) => (e: any) => {
+  const handleElementChange = (id: string) => (e: Konva.KonvaEventObject<Event>) => {
     const node = e.target;
     const updates: Partial<CanvasElement> = {
       x: node.x(),
@@ -72,7 +195,39 @@ export const CanvasRenderer = ({
       node.scaleY(1);
     }
 
+    // Update the element in real-time during drag
+    const updatedElement = { ...elements.find(el => el.id === id)!, ...updates };
+    
+    // Calculate guides for the dragged element
+    const newGuides = calculateGuides(updatedElement, elements, canvasSize, stagePadding);
+    setGuides(newGuides);
+    
     onElementUpdate(id, updates);
+  };
+
+  const handleDragStart = (id: string) => () => {
+    const element = elements.find(el => el.id === id);
+    if (element) {
+      setDraggedElement(element);
+    }
+  };
+
+  const handleDragEnd = (id: string) => () => {
+    setDraggedElement(null);
+    setGuides([]);
+  };
+
+  const handleDragMove = (id: string) => (e: Konva.KonvaEventObject<Event>) => {
+    const node = e.target;
+    const updatedElement = { 
+      ...elements.find(el => el.id === id)!, 
+      x: node.x(), 
+      y: node.y() 
+    };
+    
+    // Calculate guides in real-time during drag
+    const newGuides = calculateGuides(updatedElement, elements, canvasSize, stagePadding);
+    setGuides(newGuides);
   };
 
   const renderElement = (element: CanvasElement) => {
@@ -84,7 +239,9 @@ export const CanvasRenderer = ({
       opacity: element.opacity || 1,
       onClick: () => onElementSelect(element.id),
       onTap: () => onElementSelect(element.id),
-      onDragEnd: handleElementChange(element.id),
+      onDragStart: handleDragStart(element.id),
+      onDragMove: handleDragMove(element.id),
+      onDragEnd: handleDragEnd(element.id),
       onTransformEnd: handleElementChange(element.id),
       draggable: true,
     };
@@ -177,6 +334,22 @@ export const CanvasRenderer = ({
         perfectDrawEnabled={false}
       />
       {elements.map(renderElement)}
+      
+      {/* Smart Guides */}
+      {guides.map((guide, index) => (
+        <Line
+          key={`guide-${index}`}
+          x={guide.x1}
+          y={guide.y1}
+          points={[0, 0, guide.x2 - guide.x1, guide.y2 - guide.y1]}
+          stroke={GUIDE_COLOR}
+          strokeWidth={GUIDE_WIDTH}
+          dash={[5, 5]}
+          listening={false}
+          perfectDrawEnabled={false}
+        />
+      ))}
+      
       {selectedElementId && (
         <Transformer
           ref={transformerRef}

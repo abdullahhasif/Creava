@@ -1,4 +1,4 @@
-import { Square, Circle, Type, Download, MousePointer, Plus, Image } from 'lucide-react';
+import { Square, Circle, Type, Download, MousePointer, Plus, Image, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { CanvasElement } from '@/types/editor';
@@ -12,13 +12,22 @@ interface ToolbarPanelProps {
   onToolSelect: (tool: 'select' | 'rectangle' | 'circle' | 'text' | 'image') => void;
   onAddElement: (type: CanvasElement['type'], imageUrl?: string) => void;
   onExport: () => void;
+  // Zoom controls
+  zoom: number;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onZoomReset: () => void;
 }
 
 export const ToolbarPanel = ({ 
   activeTool, 
   onToolSelect, 
   onAddElement, 
-  onExport 
+  onExport,
+  zoom,
+  onZoomIn,
+  onZoomOut,
+  onZoomReset
 }: ToolbarPanelProps) => {
   const tools = [
     { id: 'select', icon: MousePointer, label: 'Select' },
@@ -53,12 +62,32 @@ export const ToolbarPanel = ({
               className={`h-12 flex flex-col gap-1 ${
                 isActive ? 'bg-tool-active text-primary-foreground' : 'hover:bg-tool-hover'
               }`}
+              title={tool.label}
             >
               <Icon size={16} />
               <span className="text-xs">{tool.label}</span>
             </Button>
           );
         })}
+      </div>
+
+      <Separator />
+
+      {/* Zoom controls */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium text-muted-foreground">View</h3>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={onZoomOut} title="Zoom out (Ctrl/⌘ -)">
+            <ZoomOut size={16} />
+          </Button>
+          <div className="text-sm w-16 text-center select-none" aria-label="Zoom level">{Math.round(zoom * 100)}%</div>
+          <Button size="sm" variant="outline" onClick={onZoomIn} title="Zoom in (Ctrl/⌘ +)">
+            <ZoomIn size={16} />
+          </Button>
+          <Button size="sm" variant="ghost" onClick={onZoomReset} title="Reset zoom (Ctrl/⌘ 0)">
+            <RotateCcw size={16} />
+          </Button>
+        </div>
       </div>
 
       <Separator />

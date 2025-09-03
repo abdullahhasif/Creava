@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Stage, Layer } from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import { Vector2d } from 'konva/lib/types';
@@ -46,6 +46,29 @@ export const DesignEditor = () => {
   const stageRef = useRef<Konva.Stage>(null);
   const canvasSize = getCanvasSize(windowWidth, windowHeight);
   const STAGE_PADDING = 2000; // generous free space around canvas
+
+  // Zoom state
+  const [zoom, setZoom] = useState(1);
+  const MIN_ZOOM = 0.25;
+  const MAX_ZOOM = 4;
+  const ZOOM_STEP = 0.1;
+
+  const zoomIn = () => setZoom(z => Math.min(MAX_ZOOM, parseFloat((z + ZOOM_STEP).toFixed(2))))
+  const zoomOut = () => setZoom(z => Math.max(MIN_ZOOM, parseFloat((z - ZOOM_STEP).toFixed(2))))
+  const zoomReset = () => setZoom(1)
+
+  // Keyboard shortcuts for zoom
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const isMod = e.ctrlKey || e.metaKey;
+      if (!isMod) return;
+      if (e.key === '+' || e.key === '=') { e.preventDefault(); zoomIn(); }
+      if (e.key === '-') { e.preventDefault(); zoomOut(); }
+      if (e.key === '0') { e.preventDefault(); zoomReset(); }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const addElement = (type: CanvasElement['type'], imageUrl?: string, position?: Vector2d) => {
     // For tool-based placement, position should be relative to the visible canvas center
@@ -209,6 +232,10 @@ export const DesignEditor = () => {
           onToolSelect={(tool) => setEditorState(prev => ({ ...prev, tool }))}
           onAddElement={addElement}
           onExport={exportCanvas}
+          zoom={zoom}
+          onZoomIn={zoomIn}
+          onZoomOut={zoomOut}
+          onZoomReset={zoomReset}
         />
         <LayersPanel 
           elements={editorState.elements}
@@ -224,7 +251,7 @@ export const DesignEditor = () => {
           className="relative"
           style={{ width: canvasSize.width, height: canvasSize.height }}
         >
-          {/** Large workspace stage to allow free placement outside the canvas */}
+          {/* Large workspace stage to allow free placement outside the canvas */}
           {(() => {
             const stageWidth = canvasSize.width + STAGE_PADDING * 2;
             const stageHeight = canvasSize.height + STAGE_PADDING * 2;
@@ -238,6 +265,8 @@ export const DesignEditor = () => {
             width={stageWidth}
             height={stageHeight}
             style={stageStyle}
+            scaleX={zoom}
+            scaleY={zoom}
             onClick={handleStageClick}
             onTap={handleStageClick}
           >

@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Stage, Layer } from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import { Vector2d } from 'konva/lib/types';
+import Konva from 'konva';
 import { CanvasElement, EditorState } from '@/types/editor';
 import { ToolbarPanel } from './ToolbarPanel';
 import { LayersPanel } from './LayersPanel';
@@ -11,24 +12,30 @@ import { useWindowSize } from '@/hooks/use-window-size';
 import { generateId } from '@/lib/utils';
 import { toast } from 'sonner';
 
-const getCanvasSize = (width: number) => {
-  if (width < 768) { // xs
-    return { width: 300, height: 450 };
-  }
-  if (width < 1024) { // sm
-    return { width: 450, height: 600 };
-  }
-  if (width < 1280) { // md
-    return { width: 600, height: 750 };
-  }
-  if (width < 1536) { // lg
-    return { width: 800, height: 600 };
-  }
-  return { width: 900, height: 650 }; // xl
+// Compute canvas size responsively based on available viewport area
+// Maintains a 4:5 (width:height) aspect ratio and accounts for sidebars and padding
+const getCanvasSize = (viewportWidth: number, viewportHeight: number) => {
+  const LEFT_SIDEBAR_WIDTH = 320; // w-80
+  const RIGHT_SIDEBAR_WIDTH = 320; // w-80
+  const MAIN_PADDING = 32; // p-8 (2rem)
+
+  const availableWidth = Math.max(
+    240,
+    viewportWidth - LEFT_SIDEBAR_WIDTH - RIGHT_SIDEBAR_WIDTH - MAIN_PADDING * 2
+  );
+  const availableHeight = Math.max(240, viewportHeight - MAIN_PADDING * 2);
+
+  const aspect = 4 / 5; // width / height
+  // Fit the canvas into available box while preserving aspect
+  const widthLimitedByHeight = availableHeight * aspect;
+  const width = Math.min(availableWidth, widthLimitedByHeight);
+  const height = Math.round(width / aspect);
+
+  return { width: Math.round(width), height };
 };
 
 export const DesignEditor = () => {
-  const { width: windowWidth } = useWindowSize();
+  const { width: windowWidth, height: windowHeight } = useWindowSize();
   const [isEditingText, setIsEditingText] = useState<string | null>(null);
   const [editorState, setEditorState] = useState<EditorState>({
     elements: [],
@@ -36,13 +43,26 @@ export const DesignEditor = () => {
     tool: 'select'
   });
   
-  const stageRef = useRef<any>(null);
-  const canvasSize = getCanvasSize(windowWidth);
+  const stageRef = useRef<Konva.Stage>(null);
+  const canvasSize = getCanvasSize(windowWidth, windowHeight);
+  const STAGE_PADDING = 2000; // generous free space around canvas
 
   const addElement = (type: CanvasElement['type'], imageUrl?: string, position?: Vector2d) => {
-    const stageCenter = { x: (canvasSize.width + 400) / 2, y: (canvasSize.height + 400) / 2 };
-    const pos = position ? { x: position.x + 200, y: position.y + 200 } : stageCenter;
-    let newElement: CanvasElement;
+    // For tool-based placement, position should be relative to the visible canvas center
+    // For click-based placement, position is already in stage coordinates
+    let pos: Vector2d;
+    
+    if (position) {
+      // Click-based placement - position is already in stage coordinates
+      pos = position;
+    } else {
+      // Tool-based placement - center in the visible canvas area
+      pos = { x: STAGE_PADDING + canvasSize.width / 2, y: STAGE_PADDING + canvasSize.height / 2 };
+    }
+    
+    console.log('Adding element:', type, 'at position:', pos, 'canvasSize:', canvasSize, 'STAGE_PADDING:', STAGE_PADDING);
+    
+    let newElement: CanvasElement | null = null;
 
     switch (type) {
       case 'rectangle':
@@ -100,14 +120,16 @@ export const DesignEditor = () => {
         return;
     }
 
-    setEditorState(prev => ({
-      ...prev,
-      elements: [...prev.elements, newElement],
-      selectedElementId: newElement.id,
-      tool: 'select'
-    }));
+    if (newElement) {
+      setEditorState(prev => ({
+        ...prev,
+        elements: [...prev.elements, newElement!],
+        selectedElementId: newElement!.id,
+        tool: 'select'
+      }));
 
-    toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} added to canvas`);
+      toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} added to canvas`);
+    }
   };
 
   const handleStageClick = (e: KonvaEventObject<MouseEvent>) => {
@@ -202,11 +224,20 @@ export const DesignEditor = () => {
           className="relative"
           style={{ width: canvasSize.width, height: canvasSize.height }}
         >
+          {/** Large workspace stage to allow free placement outside the canvas */}
+          {(() => {
+            const stageWidth = canvasSize.width + STAGE_PADDING * 2;
+            const stageHeight = canvasSize.height + STAGE_PADDING * 2;
+            const stageStyle = { position: 'absolute' as const, top: -STAGE_PADDING, left: -STAGE_PADDING };
+            
+            console.log('Stage dimensions:', { stageWidth, stageHeight, stageStyle, canvasSize, STAGE_PADDING });
+            
+            return (
           <Stage
             ref={stageRef}
-            width={canvasSize.width + 400}
-            height={canvasSize.height + 400}
-            style={{ position: 'absolute', top: -200, left: -200 }}
+            width={stageWidth}
+            height={stageHeight}
+            style={stageStyle}
             onClick={handleStageClick}
             onTap={handleStageClick}
           >
@@ -220,9 +251,12 @@ export const DesignEditor = () => {
                 isEditingText={isEditingText}
                 onTextEdit={handleTextEdit}
                 canvasSize={canvasSize}
+                stagePadding={STAGE_PADDING}
               />
             </Layer>
           </Stage>
+            );
+          })()}
         </div>
       </div>
 

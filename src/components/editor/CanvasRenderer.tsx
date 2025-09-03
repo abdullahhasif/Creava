@@ -13,6 +13,7 @@ interface CanvasRendererProps {
   isEditingText: string | null;
   onTextEdit: (id: string, text: string) => void;
   canvasSize: { width: number; height: number };
+  stagePadding?: number;
 }
 
 // Image component to handle loading
@@ -37,7 +38,8 @@ export const CanvasRenderer = ({
   onTextDoubleClick,
   isEditingText,
   onTextEdit,
-  canvasSize
+  canvasSize,
+  stagePadding = 200
 }: CanvasRendererProps) => {
   const transformerRef = useRef<Konva.Transformer>(null);
   const [editingText, setEditingText] = useState('');
@@ -162,8 +164,8 @@ export const CanvasRenderer = ({
     <>
       {/* Canvas background - shows the actual canvas bounds */}
       <Rect
-        x={200}
-        y={200}
+        x={stagePadding}
+        y={stagePadding}
         width={canvasSize.width}
         height={canvasSize.height}
         fill="white"

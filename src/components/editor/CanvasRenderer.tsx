@@ -196,7 +196,12 @@ export const CanvasRenderer = ({
     }
 
     // Update the element in real-time during drag
-    const updatedElement = { ...elements.find(el => el.id === id)!, ...updates };
+    const foundElement = elements.find(el => el.id === id);
+    if (!foundElement) {
+      // Element not found; skip update to avoid runtime error
+      return;
+    }
+    const updatedElement = { ...foundElement, ...updates };
     
     // Calculate guides for the dragged element
     const newGuides = calculateGuides(updatedElement, elements, canvasSize, stagePadding);

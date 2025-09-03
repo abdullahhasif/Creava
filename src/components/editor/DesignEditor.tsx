@@ -256,7 +256,6 @@ export const DesignEditor = () => {
             const stageHeight = canvasSize.height + STAGE_PADDING * 2;
             const stageStyle = { position: 'absolute' as const, top: -STAGE_PADDING, left: -STAGE_PADDING };
             
-            console.log('Stage dimensions:', { stageWidth, stageHeight, stageStyle, canvasSize, STAGE_PADDING });
             
             return (
           <Stage

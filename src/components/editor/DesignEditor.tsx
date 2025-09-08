@@ -223,7 +223,7 @@ export const DesignEditor = () => {
   const selectedElement = editorState.elements.find(el => el.id === editorState.selectedElementId);
 
   return (
-    <div className="h-screen bg-editor-background flex">
+    <div className="h-full bg-editor-background flex">
       {/* Left Sidebar - Tools & Layers */}
       <div className="w-80 bg-editor-panel border-r border-editor-panel-border flex flex-col">
         <ToolbarPanel 
